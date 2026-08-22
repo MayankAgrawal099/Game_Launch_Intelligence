@@ -1,0 +1,11 @@
+-- =============================================================
+-- run_pipeline.sql
+-- Execute each file below in order via pgAdmin's query tool.
+-- Open and run each file individually in sequence:
+--   1. 01_setup_and_load.sql
+--   2. 02_data_quality_and_cleaning.sql
+--   3. 03_data_model.sql
+--   4. 04_market_analysis.sql
+--   5. 05_launch_decision.sql
+--   6. 06_export_results.sql
+-- =============================================================

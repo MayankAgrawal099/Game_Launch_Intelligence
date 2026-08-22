@@ -1,0 +1,21 @@
+genre,trend_slope,trend_score
+Action-Adventure,1.31940,100.00
+Shooter,1.27686,98.26
+Role-Playing,0.36310,60.89
+Sandbox,0.28490,57.70
+Music,0.19913,54.19
+Sports,0.19849,54.16
+Mmo,0.04214,47.77
+Party,0.03242,47.37
+Visual Novel,0.02043,46.88
+Board Game,0.00961,46.44
+Education,0.00394,46.21
+Platform,-0.00440,45.87
+Strategy,-0.11707,41.26
+Puzzle,-0.19546,38.05
+Fighting,-0.20519,37.65
+Action,-0.25282,35.71
+Adventure,-0.45250,27.54
+Racing,-0.51436,25.01
+Simulation,-0.58582,22.09
+Misc,-1.12600,0.00
