@@ -52,3 +52,6 @@ desktop.ini
 # UV / Package manager cache
 .uv/
 .cache/
+
+# Python version
+.python-version
