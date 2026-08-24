@@ -40,7 +40,7 @@ BEGIN;
 \i '03a_source_architecture.sql'
 
 -- Phase 4 compatibility
-\i '03b_phase4_compatibility.sql'
+\i '03b_compatibility_check.sql'
 
 -- Phase 2
 \i '04_market_analysis.sql'
@@ -57,7 +57,7 @@ COMMIT;
 -- performed by the \copy command in 06a.
 -- ------------------------------------------------------------
 
-\set model_csv 'C:/REPLACE_WITH_YOUR_PROJECT_PATH/Python_Analysis/results/model/model_success_predictions.csv'
+\set model_csv 'C:/Users/USER/Desktop/Resume Projects/Game_Launch_Intelligence/Python_Analysis/outputs/model_success_predictions.csv'
 
 \copy analysis.model_success_predictions FROM :'model_csv' WITH CSV HEADER;
 
