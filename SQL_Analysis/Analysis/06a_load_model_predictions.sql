@@ -40,6 +40,14 @@ CREATE TABLE model_success_predictions (
     decision_threshold NUMERIC
 );
 
+COPY model_success_predictions
+FROM 'C:/Users/USER/Desktop/Resume Projects/Game_Launch_Intelligence/Python_Analysis/outputs/model_success_predictions.csv'
+WITH (
+    FORMAT CSV,
+    HEADER TRUE,
+    NULL ''
+);
+
 -- ------------------------------------------------------------
 -- 2. Scenario-level compatibility view
 --
@@ -50,17 +58,34 @@ CREATE TABLE model_success_predictions (
 -- raw table by run_pipeline.sql.
 -- ------------------------------------------------------------
 
-CREATE OR REPLACE VIEW v_model_success_predictions AS
+DROP TABLE IF EXISTS analysis.model_success_predictions_scenario CASCADE;
+
+CREATE TABLE analysis.model_success_predictions_scenario AS
 SELECT
     genre,
     console AS platform,
-    AVG(success_probability)::numeric AS success_probability,
+    AVG(success_probability) AS success_probability,
     COUNT(*) AS prediction_count
-FROM model_success_predictions
+FROM analysis.model_success_predictions
 WHERE success_probability IS NOT NULL
+  AND genre IS NOT NULL
+  AND console IS NOT NULL
 GROUP BY
     genre,
     console;
+
+CREATE INDEX IF NOT EXISTS idx_model_predictions_scenario
+ON analysis.model_success_predictions_scenario (genre, platform);
+
+DROP VIEW IF EXISTS analysis.v_model_success_predictions CASCADE;
+
+CREATE VIEW analysis.v_model_success_predictions AS
+SELECT
+    genre,
+    platform,
+    success_probability,
+    prediction_count
+FROM analysis.model_success_predictions_scenario;
 
 -- ------------------------------------------------------------
 -- 3. Validation
@@ -78,6 +103,7 @@ SELECT
 FROM v_model_success_predictions;
 
 SELECT *
-FROM v_model_success_predictions
+FROM analysis.v_model_success_predictions
 ORDER BY success_probability DESC
 LIMIT 20;
+

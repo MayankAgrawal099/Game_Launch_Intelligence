@@ -345,33 +345,92 @@ FROM scored;
 -- ------------------------------------------------------------
 -- 8. Genre × platform fit
 -- ------------------------------------------------------------
-CREATE VIEW analysis.v_phase2_genre_platform_fit AS
+CREATE OR REPLACE VIEW analysis.v_phase2_genre_platform_fit AS
+
 WITH base AS (
+
     SELECT
-        genre,
-        platform,
+        g.genre,
+        g.platform,
+
         COUNT(*) AS title_count,
-        AVG(total_sales) AS avg_sales,
-        PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY total_sales) AS median_sales
-    FROM analysis.v_game_sales_conformed
-    WHERE genre IS NOT NULL
-      AND platform IS NOT NULL
-      AND total_sales IS NOT NULL
-    GROUP BY genre, platform
-), eligible AS (
-    SELECT * FROM base WHERE title_count >= 10
-), scored AS (
+
+        AVG(g.total_sales) AS avg_sales,
+
+        PERCENTILE_CONT(0.50)
+            WITHIN GROUP (
+                ORDER BY g.total_sales
+            ) AS median_sales
+
+    FROM analysis.v_game_sales_conformed g
+
+    -- --------------------------------------------------------
+    -- Strategic platform filter
+    -- --------------------------------------------------------
+    INNER JOIN core.strategic_platform_universe spu
+        ON g.platform = spu.platform_code
+       AND spu.strategic_status = 'IN_SCOPE'
+
+    WHERE g.genre IS NOT NULL
+      AND g.platform IS NOT NULL
+      AND g.total_sales IS NOT NULL
+
+    GROUP BY
+        g.genre,
+        g.platform
+),
+
+eligible AS (
+
+    SELECT *
+    FROM base
+    WHERE title_count >= 10
+),
+
+scored AS (
+
     SELECT
         *,
-        PERCENT_RANK() OVER (PARTITION BY genre ORDER BY median_sales) AS median_sales_pct,
-        PERCENT_RANK() OVER (PARTITION BY genre ORDER BY avg_sales) AS avg_sales_pct
+
+        PERCENT_RANK() OVER (
+            PARTITION BY genre
+            ORDER BY median_sales
+        ) AS median_sales_pct,
+
+        PERCENT_RANK() OVER (
+            PARTITION BY genre
+            ORDER BY avg_sales
+        ) AS avg_sales_pct
+
     FROM eligible
 )
+
 SELECT
     *,
-    ROUND(((median_sales_pct * 0.60 + avg_sales_pct * 0.40) * 100)::numeric, 2)
-        AS genre_platform_fit_score
+
+    ROUND(
+        (
+            (
+                median_sales_pct * 0.60
+                + avg_sales_pct * 0.40
+            ) * 100
+        )::numeric,
+        2
+    ) AS genre_platform_fit_score
+
 FROM scored;
+
+SELECT DISTINCT
+    platform
+FROM analysis.v_phase2_genre_platform_fit
+ORDER BY platform;
+
+SELECT
+    platform,
+    COUNT(*) AS genre_platform_rows
+FROM analysis.v_phase2_genre_platform_fit
+GROUP BY platform
+ORDER BY platform;
 
 -- ------------------------------------------------------------
 -- 9. Regional Opportunity
