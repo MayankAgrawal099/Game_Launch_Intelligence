@@ -124,6 +124,69 @@ WHERE NOT EXISTS (
     WHERE m.platform_code = p.platform_code
 );
 
+-- =============================================================
+-- Strategic launch platform universe
+-- =============================================================
+--
+-- Business scope for the final launch recommendation layer.
+--
+-- The historical dataset supports:
+--   PC
+--   PlayStation 4
+--   Xbox One
+--
+-- These are treated as the strategic launch platforms for
+-- scenario recommendations.
+--
+-- Older generations remain available for historical analysis
+-- but are excluded from final launch recommendations.
+-- =============================================================
+
+CREATE TABLE IF NOT EXISTS core.strategic_platform_universe (
+    platform_code TEXT PRIMARY KEY,
+    platform_family TEXT NOT NULL,
+    strategic_status TEXT NOT NULL,
+    rationale TEXT
+);
+
+INSERT INTO core.strategic_platform_universe (
+    platform_code,
+    platform_family,
+    strategic_status,
+    rationale
+)
+VALUES
+(
+    'PC',
+    'PC',
+    'IN_SCOPE',
+    'Primary PC launch platform represented in the historical dataset.'
+),
+(
+    'PS4',
+    'PlayStation',
+    'IN_SCOPE',
+    'Primary PlayStation platform in the later historical launch period.'
+),
+(
+    'XONE',
+    'Xbox',
+    'IN_SCOPE',
+    'Primary Xbox platform in the later historical launch period.'
+)
+ON CONFLICT (platform_code) DO UPDATE SET
+    platform_family = EXCLUDED.platform_family,
+    strategic_status = EXCLUDED.strategic_status,
+    rationale = EXCLUDED.rationale;
+
+SELECT
+    platform_code,
+    platform_family,
+    strategic_status,
+    rationale
+FROM core.strategic_platform_universe
+ORDER BY platform_code;
+
 -- -------------------------------------------------------------
 -- 3. Enriched console view
 -- -------------------------------------------------------------

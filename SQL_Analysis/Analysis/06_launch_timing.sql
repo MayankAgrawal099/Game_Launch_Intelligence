@@ -1,5 +1,5 @@
 -- ============================================================
--- 07_launch_timing.sql
+-- 06_launch_timing.sql
 -- Gaming Launch Intelligence
 -- Phase 4: Time & Launch Methodology
 -- ============================================================
@@ -11,19 +11,6 @@
 -- Core principle:
 --   A launch recommendation must only use information that
 --   could have been known at the decision date.
---
--- This file creates:
---   1. Release cohorts
---   2. Seasonal launch windows
---   3. Platform lifecycle indicators
---   4. Competitive release density
---   5. Historical timing opportunity
---   6. Pre-launch-safe timing features
---
--- Important:
---   These are historical indicators, not 2026 forecasts.
---   Modern/current platform intelligence will be refined after
---   the source-bridge audit.
 -- ============================================================
 
 SET search_path TO analysis, public;
@@ -36,9 +23,6 @@ DROP VIEW IF EXISTS v_release_cohorts CASCADE;
 
 -- ------------------------------------------------------------
 -- 1. Release cohorts
---
--- 3-year cohorts provide a more stable comparison than raw
--- calendar years while preserving broad market eras.
 -- ------------------------------------------------------------
 CREATE OR REPLACE VIEW v_release_cohorts AS
 SELECT
@@ -59,17 +43,6 @@ WHERE release_date IS NOT NULL
 
 -- ------------------------------------------------------------
 -- 2. Platform lifecycle
---
--- Approximate lifecycle stage using the platform's observed
--- release distribution:
---
---   Early     = first 20% of observed releases
---   Growth    = 20-50%
---   Mature    = 50-80%
---   Late      = final 20%
---
--- This is intentionally empirical rather than based on
--- external launch dates.
 -- ------------------------------------------------------------
 CREATE OR REPLACE VIEW v_platform_lifecycle AS
 WITH platform_years AS (
@@ -90,13 +63,12 @@ base AS (
         p.first_observed_year,
         p.last_observed_year,
         (
-            g.release_year - p.first_observed_year
-        )
-        /
-        NULLIF(
-            p.last_observed_year - p.first_observed_year,
-            0
-        )::numeric AS lifecycle_position
+            (g.release_year - p.first_observed_year)::numeric
+            / NULLIF(
+                (p.last_observed_year - p.first_observed_year)::numeric,
+                0
+            )
+        ) AS lifecycle_position
     FROM v_phase4_game_base g
     JOIN platform_years p
       ON g.platform = p.platform
@@ -110,6 +82,7 @@ base AS (
 SELECT
     *,
     CASE
+        WHEN lifecycle_position IS NULL THEN 'SINGLE_PERIOD'
         WHEN lifecycle_position <= 0.20 THEN 'EARLY'
         WHEN lifecycle_position <= 0.50 THEN 'GROWTH'
         WHEN lifecycle_position <= 0.80 THEN 'MATURE'
@@ -123,47 +96,41 @@ FROM base;
 -- Business question:
 --   How crowded is the launch window?
 --
--- We measure the number of comparable releases within:
---   +/- 30 days
+-- Comparable releases are defined as:
+--   same genre + same platform + within +/- 30 days.
 --
--- Comparables:
---   Same genre + same platform.
---
--- The current game's own row is excluded.
+-- IMPORTANT:
+--   is_console is NOT used here. It only distinguishes broad
+--   console/non-console categories and would incorrectly treat
+--   different platforms as direct launch competitors.
 -- ------------------------------------------------------------
 CREATE OR REPLACE VIEW v_release_competition_density AS
 SELECT
     a.game_id,
     a.game_title,
     a.genre,
-    a.is_console,
+    a.platform,
     a.release_date,
     COUNT(b.game_id) AS comparable_releases_30d
 FROM v_phase4_game_base a
 LEFT JOIN v_phase4_game_base b
   ON a.genre = b.genre
- AND a.is_console = b.is_console
+ AND a.platform = b.platform
  AND b.release_date BETWEEN
         a.release_date - INTERVAL '30 days'
-        AND
-        a.release_date + INTERVAL '30 days'
+        AND a.release_date + INTERVAL '30 days'
  AND a.game_id <> b.game_id
 WHERE a.release_date IS NOT NULL
+  AND a.platform IS NOT NULL
 GROUP BY
     a.game_id,
     a.game_title,
     a.genre,
-    a.is_console,
+    a.platform,
     a.release_date;
 
 -- ------------------------------------------------------------
 -- 4. Genre timing opportunity
---
--- Historical question:
---   Which launch months have historically produced stronger
---   performance for a genre?
---
--- We require >= 10 releases per genre/month.
 -- ------------------------------------------------------------
 CREATE OR REPLACE VIEW v_genre_timing_opportunity AS
 WITH monthly AS (
@@ -202,26 +169,15 @@ SELECT
     *,
     ROUND(
         (
-            (
-                median_sales_pct * 0.60
-                + avg_sales_pct * 0.40
-            ) * 100
-        )::numeric,
+            median_sales_pct * 0.60
+            + avg_sales_pct * 0.40
+        )::numeric * 100,
         2
     ) AS historical_timing_score
 FROM scored;
 
 -- ------------------------------------------------------------
 -- 5. Launch timing scenarios
---
--- This produces a decision-ready timing table.
---
--- It does not say:
---   "November is always best."
---
--- It says:
---   "Historically, for this genre, this month ranked X
---    relative to other months with sufficient evidence."
 -- ------------------------------------------------------------
 CREATE OR REPLACE VIEW v_launch_timing_scenarios AS
 WITH best_month AS (
@@ -254,21 +210,12 @@ FROM best_month
 WHERE rn = 1;
 
 -- ------------------------------------------------------------
--- 6. Timing interpretation
---
--- Combine:
---   timing opportunity
---   competitive release density
---   platform lifecycle
---
--- This remains descriptive in Phase 4. Phase 5 will combine
--- it with the commercial success probability and strategic
--- opportunity score.
+-- 6. Validation result
 -- ------------------------------------------------------------
 SELECT
-    t.genre,
-    t.recommended_historical_month,
-    t.historical_timing_score,
-    t.evidence_quality
-FROM v_launch_timing_scenarios t
-ORDER BY t.historical_timing_score DESC;
+    genre,
+    recommended_historical_month,
+    historical_timing_score,
+    evidence_quality
+FROM v_launch_timing_scenarios
+ORDER BY historical_timing_score DESC;
