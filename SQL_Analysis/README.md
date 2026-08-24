@@ -1,208 +1,266 @@
 # SQL Analysis
 
-This folder contains the PostgreSQL pipeline that transforms raw VGChartz sales data into the analytical outputs powering the launch decision engine. The pipeline is structured as six sequential SQL modules, each building on the previous.
+## Purpose
 
----
+The `SQL_Analysis` layer is the PostgreSQL analytical layer of the **Game Launch Intelligence** project. It takes the prepared gaming datasets through data-quality checks, modelling, market analysis, launch-timing analysis, model-output integration, strategic scenario scoring, final launch-decision logic, and CSV export.
 
 ## Folder Structure
 
-```
+```text
 SQL_Analysis/
-├── Analysis/                                  SQL pipeline modules
-│   ├── 01_setup_and_load.sql                  Schema, tables, and CSV ingestion
-│   ├── 02_data_quality_and_cleaning.sql       Profiling, cleaning, deduplication, validation
-│   ├── 03_data_model.sql                      Star schema normalisation and base views
-│   ├── 04_market_analysis.sql                 Six scored analytical dimensions
-│   ├── 05_launch_decision.sql                 Composite launch score and marketing allocation
-│   ├── 06_export_results.sql                  CSV exports for reporting / Power BI
-│   └── run_pipeline.sql                       Execution order reference
 │
-├── Result/                                    Exported analytical outputs
-│   ├── genre_attractiveness.csv
-│   ├── market_trend.csv
-│   ├── publisher_concentration.csv
-│   ├── new_entrant_performance.csv
-│   ├── platform_fit.csv
-│   ├── platform_lifecycle.csv
-│   ├── regional_opportunity.csv
-│   ├── regional_correlation.csv
-│   ├── genre_platform_fit.csv
-│   ├── launch_simulator.csv
-│   └── marketing_allocation.csv
+├── 01_setup_and_load.sql
+├── 02_data_quality_and_cleaning.sql
+├── 03_data_model.sql
+├── 03a_source_architecture.sql
+├── 03b_compatibility_check.sql
+├── 04_market_analysis.sql
+├── 05_launch_decision.sql
+├── 06_launch_timing.sql
+├── 06a_load_model_predictions.sql
+├── 07_final_decision_engine.sql
+├── 08_export_results.sql
+├── run_pipeline.sql
 │
-└── README.md
+└── Result/
+    ├── phase2_market_opportunity.csv
+    ├── phase2_competitive_accessibility.csv
+    ├── phase2_genre_platform_fit.csv
+    ├── phase2_regional_opportunity.csv
+    ├── phase4_launch_timing_scenarios.csv
+    ├── phase4_release_competition_density.csv
+    ├── phase4_platform_lifecycle.csv
+    ├── phase5_scenario_score.csv
+    └── phase5_final_launch_decision.csv
 ```
 
----
+## Execution Order
 
-## Execution
+The numbered SQL files represent the manual execution order:
 
-Run each file in order via pgAdmin's query tool:
+```text
+01_setup_and_load.sql
+        ↓
+02_data_quality_and_cleaning.sql
+        ↓
+03_data_model.sql
+        ↓
+03a_source_architecture.sql
+        ↓
+03b_compatibility_check.sql
+        ↓
+04_market_analysis.sql
+        ↓
+05_launch_decision.sql
+        ↓
+06_launch_timing.sql
+        ↓
+06a_load_model_predictions.sql
+        ↓
+07_final_decision_engine.sql
+        ↓
+08_export_results.sql
+```
 
-| Step | File | Notes |
-|---|---|---|
-| 1 | `01_setup_and_load.sql` | Use pgAdmin Import/Export for the CSV load (exclude `source_row_id`) |
-| 2 | `02_data_quality_and_cleaning.sql` | Profiles and cleans raw data |
-| 3 | `03_data_model.sql` | Builds star schema and base views |
-| 4 | `04_market_analysis.sql` | Computes six analytical dimensions |
-| 5 | `05_launch_decision.sql` | Computes composite launch scores and marketing budget allocation |
-| 6 | `06_export_results.sql` | Exports 11 CSV result files to the `Result/` directory |
+`run_pipeline.sql` is the orchestration/runner script. It is **not an additional numbered analytical phase**. Use it when you want to run the pipeline through the project's runner rather than executing the numbered scripts manually.
 
-The pipeline is idempotent — every module drops and recreates its objects, so it can be re-executed cleanly at any time.
+## SQL Pipeline
 
----
+### 01_setup_and_load.sql
 
-## What Each Module Does
+Initial database setup and source-data loading layer. It prepares the database environment and loads the source data required by downstream analysis.
 
-### 01 — Setup & Load
+### 02_data_quality_and_cleaning.sql
 
-Creates three schemas (`staging`, `core`, `analysis`), defines all tables with constraints and foreign keys, and loads the raw CSV into `staging.vgchartz_raw`. Also initialises two configuration tables:
+Data-quality and cleaning layer. It prepares consistent analytical inputs by addressing source-data quality and cleaning requirements.
 
-- **`analysis.parameters`** — Tunable thresholds (analysis window 2006–2018, minimum observations, top-N cutoffs) that scope every downstream view.
-- **`analysis.launch_config`** — The planned launch scenario. NULL values evaluate all genre-platform combinations; specific values filter to a single scenario.
+### 03_data_model.sql
 
-### 02 — Data Quality & Cleaning
+Core analytical data-model layer. It establishes the database structures used by the downstream analytical views.
 
-**Profiling:** Row counts, sales coverage, platform distribution, duplicate detection, missing-value analysis, and year-over-year observation density.
+### 03a_source_architecture.sql
 
-**Cleaning rules:**
-- Retains only sales-populated commercial observations
-- Excludes roll-up/storefront records (ALL, SERIES, XBL, PSN, etc.)
-- Standardises text casing and casts numerics with null-safe handling
-- Removes negative sales values
-- Deduplicates scrape records per (title, console, publisher, release_date) — highest `total_sales` wins
+Source-architecture layer for organising the different source datasets within the PostgreSQL analytical environment.
 
-**Validation:** Confirms zero nulls in required fields, zero negative sales, zero excluded records remaining, and regional sales reconciliation within 0.02M tolerance.
+### 03b_compatibility_check.sql
 
-~18,900 observations are retained from the original ~64,000 rows.
+Compatibility and validation layer used before the main analytical stages.
 
-### 03 — Data Model
+### 04_market_analysis.sql
 
-Normalises the cleaned staging layer into a star schema:
+Phase 2 market-analysis layer. It produces the market opportunity, competitive accessibility, genre × platform fit, and regional opportunity views.
 
-- **Dimensions:** `publishers`, `platforms`, `games` (deduplicated at the title + publisher grain)
-- **Facts:** `game_releases` (one row per game × platform × release), `sales` (regional and global)
-- **Base views:** `v_game_sales` (flattened join of all entities — foundation for every analysis) and `v_market_share` (annual genre share within the analysis window)
+Outputs:
 
-### 04 — Market Analysis
+- `phase2_market_opportunity.csv`
+- `phase2_competitive_accessibility.csv`
+- `phase2_genre_platform_fit.csv`
+- `phase2_regional_opportunity.csv`
 
-Scores genres and platforms across six analytical dimensions, each normalised to 0–100:
+### 05_launch_decision.sql
 
-| Dimension | View | What It Measures |
-|---|---|---|
-| Genre Attractiveness | `v_genre_attractiveness` | Per-title revenue productivity balanced against title-level concentration (HHI + top-10 share with adaptive weighting) |
-| Market Trends | `v_market_trend` | OLS slope of annual market share — identifies growing vs. declining genres |
-| Publisher Concentration | `v_publisher_concentration` | Publisher-level HHI and top-5 share — gauges competitive openness for a new entrant |
-| New-Entrant Performance | `v_new_entrant_performance` | Benchmarks first-time publisher entries against genre-year median — measures real-world entry accessibility |
-| Platform Fit | `v_platform_fit` | Composite of sales efficiency (50%), catalog presence (25%), and title-sales distribution (25%) — scoped to currently active platforms |
-| Regional Opportunity | `v_regional_opportunity` | Regional demand skew — where a genre over- or under-indexes vs. its global share |
+Launch-decision preparation layer used by the later timing and strategic decision stages.
 
-Additional supporting views:
-- `v_active_platforms` — Platforms with releases in the final two years of the analysis window (2017–2018). Shared across all platform-filtered views to prevent retired hardware (PS2, PSP, DS) from surfacing in launch recommendations.
-- `v_platform_lifecycle` — Platform release share over time for lifecycle and timing analysis.
-- `v_regional_correlation` — Pairwise Pearson correlation matrix across the four sales regions.
-- `v_genre_platform_fit` — Best platform choices within each genre, ranked by median sales per release.
-- `v_genre_best_region` — Picks each genre's single strongest regional skew, then ranks that skew's magnitude against every *other* genre's best skew (cross-genre ranking).
+### 06_launch_timing.sql
 
-### 05 — Launch Decision
+Phase 4 launch-timing and competitive-analysis layer. It produces historical launch timing, release competition density, and platform lifecycle analysis.
 
-**Launch Simulator (`v_launch_simulator`):** Combines all six dimensions into a weighted composite score for every genre-platform combination:
+Outputs:
 
-| Dimension | Weight | Rationale |
-|---|---|---|
-| Market Attractiveness | 25% | Commercial ceiling & title productivity |
-| Entrant Accessibility | 20% | Historical probability of a new publisher hitting above-median sales |
-| Market Trend | 15% | Genre momentum and market share trajectory |
-| Publisher Opportunity | 15% | Fragmented landscape vs. incumbent monopoly |
-| Platform Fit | 15% | Platform monetization efficiency and health |
-| Regional Opportunity | 10% | Geographic over-indexing potential |
+- `phase4_launch_timing_scenarios.csv`
+- `phase4_release_competition_density.csv`
+- `phase4_platform_lifecycle.csv`
 
-Decision classification:
+### 06a_load_model_predictions.sql
 
-| Score | Decision | Interpretation |
-|---|---|---|
-| ≥ 70 | **GO** | Strong historical signals across all dimensions |
-| 55–69 | **CONDITIONAL** | Viable with mitigation — check `primary_risk` |
-| < 55 | **AVOID** | Multiple adverse signals |
+Python → PostgreSQL model-output bridge.
 
-**Marketing Allocation (`v_marketing_allocation`):** Converts regional demand skew into a recommended budget split — 60% weighted on absolute regional demand, 40% on over-indexing signal.
+The Python layer produces `model_success_predictions.csv`. This file loads those game-level predictions into PostgreSQL, aggregates them to the `genre × platform` scenario level, and exposes the result through `v_model_success_predictions`.
 
-### 06 — Export
+This step must run **before `07_final_decision_engine.sql`**, because the final decision engine joins to `v_model_success_predictions`.
 
-Writes all analytical views to CSV in the `Result/` directory. 11 files are generated.
+### 07_final_decision_engine.sql
 
----
+Phase 5 strategic decision engine.
 
-## Summary of Analytical Results
+The scenario unit is:
 
-Key empirical results produced by the SQL pipeline across 18,900+ commercial observations (2006–2018):
+```text
+genre × platform × region × recommended launch month
+```
 
-### 1. Platform Prioritisation
-- **Top Active Platforms by Fit Score:**
-  - **PS4 / Xbox One / PC** represent the core target ecosystem for modern multi-platform releases.
-  - Across the 7th/8th generation transition window, **X360** (95.54) and **PS3** (93.75) exhibited peak historical commercial efficiency, followed by **PS4** (72.25) as the primary 8th-gen driver.
+The strategic scenario score combines:
 
-### 2. Genre Attractiveness & Accessibility
-- **Top Commercial Genres:**
-  - **Shooter** (Attractiveness Score: 43.89, Median Sales: $0.255M) and **Action-Adventure** (Score: 42.78, Median Sales: $0.270M) exhibit the highest per-title commercial productivity.
-- **New-Entrant Opportunity:**
-  - **Visual Novel** (59.18% breakout rate) and **Action-Adventure** (53.85% breakout rate) offer the highest historical success rates for first-time publishers.
-  - **Shooter** (17.28% breakout rate) and **Role-Playing** (22.43% breakout rate) impose the steepest barriers to entry due to high incumbent domination.
+| Component | Weight |
+|---|---:|
+| Market opportunity | 35% |
+| Platform fit | 25% |
+| Regional opportunity | 15% |
+| Timing opportunity | 15% |
+| Evidence quality | 10% |
 
-### 3. Launch Simulator Rankings
-- **Top Recommended Scenarios:**
-  - **Action-Adventure on PS4 / Xbox One / PC** (Launch Score: 64.94 – 68.44, CONDITIONAL / Strong Viability) — Driven by strong market momentum (Trend Score: 100.0), high entrant breakout rate (53.85%), and balanced publisher concentration.
-  - **Strategy / Role-Playing** on core platforms show strong regional viability but carry genre-specific risks (e.g. niche audience or high incumbent control).
-- **Primary Risk Flags:**
-  - Shooter scenarios trigger **"High entry risk"** due to low entrant breakout rates.
-  - Saturated segments trigger **"High publisher concentration"**.
+The strategic scenario score is a **decision score, not a probability**.
 
-### 4. Regional Skew & Marketing Allocation
-- **North America (NA) & Europe (PAL)** drive over 70% of total revenue for Action, Shooter, and Sports titles.
-- **Japan (JP)** exhibits extreme over-indexing for **Role-Playing (+12.66 pp skew)** and **Strategy (+3.61 pp skew)**, requiring isolated regional go-to-market strategies.
-- **Regional Correlation:** NA and PAL sales are tightly correlated (r = 0.88), while JP exhibits low correlation with Western markets (r = 0.35–0.45).
+The final decision engine produces:
 
----
+```text
+v_final_scenario_inputs
+v_final_scenario_score
+v_final_launch_decision
+```
 
-## Output Files
+The final decision categories are:
 
-| File | Grain | Key Columns |
-|---|---|---|
-| `genre_attractiveness.csv` | One row per genre | `attractiveness_score`, `median_sales_per_title`, `title_hhi` |
-| `market_trend.csv` | One row per genre | `trend_slope`, `trend_score` |
-| `publisher_concentration.csv` | One row per genre | `publisher_hhi`, `publisher_opportunity_score` |
-| `new_entrant_performance.csv` | One row per entry event | `vs_median_ratio`, `entry_performance` |
-| `platform_fit.csv` | One row per platform | `platform_fit_score`, `sales_per_release`, `distribution_score` |
-| `platform_lifecycle.csv` | One row per platform × year | `release_count`, `release_share_pct` |
-| `regional_opportunity.csv` | One row per genre × region | `skew_pct`, `regional_signal` |
-| `regional_correlation.csv` | Correlation matrix | NA, JP, PAL, Other, Global pairwise correlations |
-| `genre_platform_fit.csv` | One row per genre × platform | `median_sales_per_release`, `rank_in_genre` |
-| `launch_simulator.csv` | One row per genre × platform | `launch_score`, `launch_decision`, `primary_risk` |
-| `marketing_allocation.csv` | One row per genre × region | `recommended_budget_pct`, `allocation_index` |
+```text
+GO
+CONDITIONAL
+AVOID
+```
 
----
+It also produces decision confidence, primary opportunity, primary risk, and recommended action.
 
-## Configuration Reference
+### 08_export_results.sql
 
-All thresholds are driven by `analysis.parameters`, not hard-coded in queries:
+Final SQL export layer. This file should be executed **last**.
 
-| Parameter | Default | Controls |
-|---|---|---|
-| `analysis_start_year` | 2006 | Start of the analysis window |
-| `analysis_end_year` | 2018 | End of the analysis window |
-| `min_year_rows` | 100 | Minimum observations for a year to be included |
-| `top_n_titles` | 10 | Top-N titles in concentration metrics |
-| `top_n_publishers` | 5 | Top-N publishers in concentration metrics |
-| `min_platform_releases` | 25 | Minimum releases for a platform to be scored |
-| `min_genre_platform_releases` | 20 | Minimum releases for a genre-platform pair to be scored |
+It exports the Phase 2, Phase 4, and Phase 5 analytical views into nine CSV datasets and performs final row-count verification.
 
----
+The nine exports are:
 
-## Technical Notes
+```text
+phase2_market_opportunity.csv
+phase2_competitive_accessibility.csv
+phase2_genre_platform_fit.csv
+phase2_regional_opportunity.csv
+phase4_launch_timing_scenarios.csv
+phase4_release_competition_density.csv
+phase4_platform_lifecycle.csv
+phase5_scenario_score.csv
+phase5_final_launch_decision.csv
+```
 
-- **Normalised scoring:** All dimension scores are min-max normalised to 0–100 for cross-dimension comparability.
-- **Adaptive weighting:** Genre attractiveness uses variance-based weighting between HHI and top-10 share.
-- **NULL-safe defaults:** When a dimension score is unavailable for a scenario, the launch simulator defaults to 50 (neutral).
-- **Recency filter:** Uses `v_active_platforms` (2017–2018 active releases) to exclude obsolete hardware.
-- **Cross-genre regional scoring:** `v_genre_best_region` ranks the single highest regional skew of each genre across all genres to ensure discriminatory signal.
-- **PostgreSQL 18 compatible:** All queries use standard PostgreSQL syntax executable in pgAdmin.
+## Analytical Views
+
+The main decision-support views are:
+
+```text
+v_phase2_market_opportunity
+v_phase2_competitive_accessibility
+v_phase2_genre_platform_fit
+v_phase2_regional_opportunity
+v_launch_timing_scenarios
+v_release_competition_density
+v_platform_lifecycle
+v_model_success_predictions
+v_final_scenario_score
+v_final_launch_decision
+```
+
+## SQL → Python → SQL → Power BI Flow
+
+```text
+PostgreSQL source/conformed data
+          ↓
+      SQL analysis
+          ↓
+     Python Analysis
+          ↓
+model_success_predictions.csv
+          ↓
+06a_load_model_predictions.sql
+          ↓
+v_model_success_predictions
+          ↓
+07_final_decision_engine.sql
+          ↓
+Final strategic scenario + launch decision views
+          ↓
+08_export_results.sql
+          ↓
+Nine analytical CSV exports
+          ↓
+Python / Power BI
+```
+
+This keeps statistical modelling in Python while keeping the final strategic decision framework transparent and queryable in PostgreSQL.
+
+## Validation
+
+Validation is included at important stages of the pipeline. The final export layer checks the row counts of the analytical views corresponding to the nine exported datasets.
+
+The completed project currently contains nine validated analytical exports:
+
+- 4 Phase 2 datasets
+- 3 Phase 4 datasets
+- 2 Phase 5 datasets
+
+The final decision engine also validates decision categories and scenario/platform coverage.
+
+## Reproduction Instructions
+
+1. Make sure PostgreSQL is available and the project database/schemas are configured.
+2. Make sure the source data required by `01_setup_and_load.sql` is available.
+3. Run the numbered SQL files in the execution order documented above, or use `run_pipeline.sql` as the project runner.
+4. Complete the Python analysis required to generate `model_success_predictions.csv`.
+5. Run `06a_load_model_predictions.sql`.
+6. Run `07_final_decision_engine.sql`.
+7. Run `08_export_results.sql` last.
+8. Confirm that all nine CSV exports exist in `SQL_Analysis/Result/`.
+9. Use those exports for downstream Python analysis and Power BI.
+
+## Important Assumptions and Limitations
+
+- Historical game-sales and release data are the evidence base for the strategic analysis.
+- Historical performance does not guarantee future commercial success.
+- The strategic scenario score is a decision-support score, not a probability.
+- Success probability and strategic opportunity are separate dimensions in the decision framework.
+- Evidence quality affects the final decision logic.
+- `GO`, `CONDITIONAL`, and `AVOID` are rule-based decision-support outputs, not automatic investment approvals.
+- Missing model probabilities can lead to a `CONDITIONAL` decision rather than an automatic rejection.
+- Final recommendations should be validated against current market conditions, financial assumptions, production constraints, and other information not represented in the historical datasets.
+
+## Current Status
+
+The SQL analytical layer is complete through the export stage. It contains the ordered SQL pipeline, Phase 2 market analysis, Phase 4 launch timing and competition analysis, Python-to-PostgreSQL model integration, Phase 5 strategic scenario scoring, final launch decision logic, nine CSV exports, and final validation.
+
+The next downstream consumer of these SQL outputs is the Power BI dashboard layer.

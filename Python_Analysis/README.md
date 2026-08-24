@@ -1,99 +1,424 @@
 # Python Analysis
 
-This folder contains the Python analytical and visualization layer for the **Gaming Launch Intelligence** project. It builds on the cleaned dataset and SQL results, applying rigorous exploratory analysis, non-parametric statistical hypothesis testing, econometric concentration metrics, and interactive visual decision tools.
+## Gaming Launch Intelligence
+
+This folder contains the Python analytical and visualisation layer of the Gaming Launch Intelligence project.
+
+Python is used for statistical analysis, pre-launch commercial success modeling, analytical validation, visualisation, and business recommendations.
+
+The Python layer works alongside the PostgreSQL analytical layer and prepares the outputs required for the final decision-support dashboard.
 
 ---
 
-## Folder Structure
+## 1. Purpose of the Python Layer
 
+The Python layer is responsible for:
+
+- Statistical analysis
+- Exploratory analytical validation
+- Feature engineering
+- Pre-launch success modeling
+- Model evaluation
+- Model predictions
+- Visualisation
+- Business recommendation support
+- Preparing decision-ready outputs for Power BI
+
+The Python analysis is designed to answer business questions rather than simply generate charts or model metrics.
+
+---
+
+## 2. Required Dataset Before Running the Analysis
+
+### `steam_cleaned_2026.csv`
+
+Before running the Python notebooks, download the cleaned Steam 2026 dataset from its original source.
+
+**Source:** [Steam Dataset 2026 cleaned — Kaggle](https://www.kaggle.com/datasets/stefanotriscali/steam-database-2026-fixed)
+
+The dataset is published by Stefano Triscali and is described as a structurally corrected and enhanced Steam games dataset containing information on more than 114,000 games.
+
+### Required file location
+
+After downloading the dataset, place the CSV file here:
+
+```text
+Game_Launch_Intelligence/
+└── Game_Data/
+    └── steam_cleaned_2026.csv
 ```
+
+The Python notebooks expect this exact filename and location.
+
+> **Important:** The dataset is not included in this repository. Download it from the Kaggle source before running the Python analysis.
+
+---
+
+## 3. Notebook Structure
+
+The Python analysis is organised into notebooks covering:
+
+- Data and analytical setup
+- Statistical analysis
+- Visualisation and recommendations
+- Supporting analytical workflows
+- Final output preparation
+
+The current visualisation notebook is:
+
+```text
+03_visualisation_and_recommendations_fixed.ipynb
+```
+
+The exact notebook filenames present in `Python_Analysis/notebooks/` should be treated as the source of truth for the current implementation.
+
+---
+
+## 4. Statistical Analysis Workflow
+
+The statistical analysis establishes the evidence used to understand historical commercial performance and support downstream modeling.
+
+The analysis focuses on relationships between variables such as:
+
+- Genre
+- Platform
+- Release timing
+- Regional performance
+- Historical sales
+- Commercial success
+
+The purpose is to identify statistically useful patterns before building the predictive layer.
+
+---
+
+## 5. Pre-Launch Success Modeling
+
+The Python model estimates the probability that a game will achieve the project's defined commercial success condition.
+
+The model produces game-level predictions containing:
+
+```text
+title
+genre
+console
+platform_family
+release_date
+release_year
+total_sales
+is_success
+success_probability
+predicted_success
+decision_threshold
+```
+
+The resulting predictions are exported for loading into PostgreSQL.
+
+The current prediction dataset contains:
+
+```text
+646 game-level predictions
+```
+
+The model probabilities currently span approximately:
+
+```text
+0.03 → 0.89
+```
+
+These predictions are not treated as guaranteed commercial outcomes.
+
+They provide a statistical signal that is combined with the strategic scenario analysis in PostgreSQL.
+
+---
+
+## 6. Python → SQL Analytical Flow
+
+The model predictions are loaded into PostgreSQL through the SQL layer.
+
+The prediction data is aggregated to:
+
+```text
+Genre × Platform
+```
+
+before being joined with the final strategic scenarios.
+
+The current integration produces:
+
+```text
+164 total strategic scenarios
+148 scenarios with model probability
+16 scenarios without model probability
+```
+
+The 16 scenarios without a matching probability are retained rather than receiving an artificial estimate.
+
+---
+
+## 7. Visualisation and Business Recommendations
+
+The visualisation notebook turns the final SQL analytical outputs into decision-ready visualisations and recommendations.
+
+The notebook is aligned with the current SQL export layer and does not depend on retired analytical exports.
+
+The current business questions are:
+
+1. **Which platform should we prioritise?**
+2. **Which genre/platform combinations represent the strongest opportunities?**
+3. **Which regions and launch windows deserve attention?**
+4. **Which scenarios should management prioritise, conditionally validate, or avoid?**
+
+The goal is to communicate analytical findings and support business interpretation rather than simply display raw data.
+
+---
+
+## 8. Nine SQL Datasets Consumed
+
+The visualisation layer consumes nine validated SQL exports:
+
+```text
+phase2_market_opportunity.csv
+phase2_competitive_accessibility.csv
+phase2_genre_platform_fit.csv
+phase2_regional_opportunity.csv
+
+phase4_launch_timing_scenarios.csv
+phase4_release_competition_density.csv
+phase4_platform_lifecycle.csv
+
+phase5_scenario_score.csv
+phase5_final_launch_decision.csv
+```
+
+These files are produced in:
+
+```text
+SQL_Analysis/Result/
+```
+
+The Python visualisation layer therefore uses the validated SQL outputs as its analytical input.
+
+---
+
+## 9. Current Visualisation Questions
+
+### Q1 — Which platform should we prioritise?
+
+The analysis combines:
+
+- Platform lifecycle
+- Historical platform presence
+- Strategic scenario scores
+- Evidence strength
+
+The objective is not to declare one platform universally superior, but to identify platforms with strong historical evidence and strategic relevance.
+
+### Q2 — Which genre/platform combinations represent the strongest opportunities?
+
+This combines genre-level opportunity with platform fit to identify strategically attractive combinations.
+
+### Q3 — Which regions and launch windows deserve attention?
+
+This evaluates:
+
+- Regional opportunity
+- Historical launch timing
+- Supporting evidence
+- Competitive context
+
+### Q4 — Which scenarios should management prioritise, conditionally validate, or avoid?
+
+This uses the final strategic scenario score and final launch decision output to support management prioritisation.
+
+---
+
+## 10. Generated Visualisations
+
+The visualisation layer produces charts addressing the project's business questions.
+
+Examples include:
+
+- Platform lifecycle analysis
+- Platform prioritisation
+- Genre × platform opportunity
+- Regional opportunity
+- Launch timing opportunity
+- Competition pressure
+- Strategic scenario scores
+- Final launch decisions
+
+The visualisations are intended to communicate findings and support business interpretation.
+
+---
+
+## 11. Figure Output Structure
+
+All generated figures are saved to exactly one location:
+
+```text
 Python_Analysis/
-├── notebooks/
-│   ├── 01_cleaning_and_eda.ipynb                    Data cleaning & exploratory data analysis
-│   ├── 02_statistical_analysis.ipynb                Hypothesis tests & statistical validation
-│   └── 03_visualisation_and_recommendations.ipynb   Business-oriented charts & final recommendations
-│
-├── outputs/
-│   ├── cleaned_dataset.csv                          Cleaned baseline dataset (~18.9k rows)
-│   └── figures/                                     Exported interactive charts (HTML & PNG)
-│
-└── README.md
+└── outputs/
+    └── figures/
 ```
 
----
+No additional figure or result directories should be created by the Python visualisation notebook.
 
-## Notebook Summaries & Methodologies
-
-### 01 — Data Cleaning & Exploratory Data Analysis (`01_cleaning_and_eda.ipynb`)
-- **Independent Python Pipeline:** Replicates and validates the SQL cleaning rules in Python (filtering out unpopulated sales, excluding synthetic platforms `ALL`, `SERIES`, `PSN`, `XBL`, handling missing values, and deduplicating records per title-platform-publisher).
-- **Distribution Profiling:** Visualises heavy right-skewed sales distributions (kurtosis and skewness metrics) and justifies non-parametric metrics (median over mean).
-- **Exploratory Visualizations:** Comprehensive inspection of volume vs. sales by genre, platform distributions, historical temporal volumes (identifying the reliable 2006–2018 window), regional sales compositions, and critic score relationships.
-
-### 02 — Statistical Analysis & Hypothesis Testing (`02_statistical_analysis.ipynb`)
-- **Normality Testing:** Shapiro-Wilk test and Q-Q plots confirm sales distributions are strongly non-normal ($p < 10^{-5}$), necessitating non-parametric methods.
-- **Platform & Genre Comparisons:** Kruskal-Wallis tests and post-hoc pairwise Mann-Whitney U tests confirm statistically significant differences in sales potential across platforms and genres ($p < 0.001$).
-- **Regional Sales Independence:** Spearman rank correlation analysis across regional sales matrices demonstrates strong correlation between North America and Europe, but structural divergence with Japan.
-- **Trend Significance:** Mann-Kendall trend tests on time-series annual market shares evaluate growing vs. declining genres.
-- **Inequality & Dominance:** Lorenz curves and Gini coefficient calculations per genre measure publisher market concentration and barriers to entry.
-- **Success Factor Modelling:** Standardized logistic regression models predict factors associated with achieving top-quartile commercial success.
-
-### 03 — Visualisation & Strategic Recommendations (`03_visualisation_and_recommendations.ipynb`)
-- **Interactive Decision Cockpit:** Publication-ready Plotly visualizations answering each core business question:
-  1. *Platform Prioritisation:* Radar charts of platform efficiency, presence, and distribution alongside lifecycle heatmaps.
-  2. *Genre Opportunity:* Multi-dimensional attractiveness bubble charts (sales productivity vs. concentration vs. trend).
-  3. *Regional Marketing Strategy:* Demand skew bar charts and marketing allocation treemaps.
-  4. *Success Factors & Risk Scoring:* Stacked composite launch scorecards with explicit primary risk flags.
+The figure output provides a clean handoff to the reporting and dashboard layer.
 
 ---
 
-## Summary of Analytical Results
+## 12. Python → SQL → Python Analytical Flow
 
-Key empirical results established by the Python analysis across 18,900+ commercial observations (2006–2018):
+```text
+Python
+  │
+  ├── Statistical analysis
+  ├── Feature engineering
+  └── Success model
+        │
+        ▼
+Game-level predictions
+        │
+        ▼
+PostgreSQL
+        │
+        ├── Strategic analysis
+        ├── Scenario scoring
+        └── Final launch decisions
+        │
+        ▼
+SQL_Analysis/Result/
+        │
+        ▼
+Python visualisation
+        │
+        ▼
+Business recommendations
+        │
+        ▼
+Power BI
+```
 
-### 1. Platform Prioritization (Q1)
-- **Kruskal-Wallis Test ($H = 432.1, p < 0.001$):** Platform choice has a statistically significant impact on sales outcomes.
-- **Efficiency & Longevity:** PS4, Xbox One, and PC provide the optimal balance of market presence, per-release efficiency, and longevity for multi-platform releases.
-- **Sales Spread:** PS4 shows the highest median sales per release among active 8th-gen consoles, while PC provides high long-tail stability with lower upfront barrier.
-
-### 2. Genre Opportunity & Market Dynamics (Q2)
-- **Kruskal-Wallis Genre Test ($p < 0.001$):** Genre revenue potential varies significantly.
-- **High Productivity Segments:** **Shooter** (median sales: \$0.255M) and **Action-Adventure** (median sales: \$0.270M) generate the highest revenue per title.
-- **Market Share Trajectory (Mann-Kendall Trend Test):**
-  - **Action-Adventure** and **Shooter** exhibit positive monotonic growth trends ($Z > +2.0, p < 0.05$).
-  - **Music/Party** and **Platform** titles exhibit significant structural decline ($Z < -2.0, p < 0.01$).
-- **Market Openness (Gini Analysis):**
-  - **Role-Playing** and **Shooter** display high Gini coefficients ($G > 0.78$), indicating strong publisher monopolization.
-  - **Action-Adventure** and **Simulation** show lower Gini concentration, making them more accessible to new entrants.
-
-### 3. Regional Marketing Strategy (Q3)
-- **Regional Sales Correlation (Spearman Rank):**
-  - **North America & Europe (PAL):** $\rho = 0.88$ (strongest alignment; shared marketing campaigns work effectively).
-  - **Japan vs. West:** $\rho = 0.38$ with NA, $\rho = 0.42$ with PAL (independent market requiring isolated content strategy and localized spend).
-- **Budget Allocation:**
-  - Standard action titles: allocate ~45% NA, ~40% PAL, ~10% Other, ~5% JP.
-  - Role-Playing & Strategy: Japan budget weighting increases to 30–35% due to high positive demand skew (+12.66 pp).
-
-### 4. Success Factors & Risk Classification (Q4)
-- **Logistic Regression Model ($\text{AUC} = 0.79 \pm 0.02$):**
-  - **Publisher Track Record:** Strongest positive predictor of top-quartile sales ($\beta = +1.42$).
-  - **Critic Score Acclaim:** Second strongest predictor ($\beta = +0.89$); high-rated games ($Q_4$) generate $2.8\times$ the median revenue of low-rated games ($Q_1$) ($p < 0.001$, Mann-Whitney U).
-  - **Platform Popularity:** Moderate positive predictor ($\beta = +0.45$).
-- **Optimal Launch Recommendation:**
-  - **Primary Target:** Action-Adventure on PS4 / Xbox One / PC.
-  - **Decision:** `CONDITIONAL / HIGH VIABILITY` (Launch Score: ~68.4).
-  - **Strategic Playbook:** Prioritize Western markets (NA/PAL), invest heavily in production quality to target critic score $\ge 80$, and leverage digital multi-platform distribution to mitigate new-entrant publisher risk.
+This separation keeps statistical modeling, relational analytical logic, and dashboard presentation distinct.
 
 ---
 
-## Running the Notebooks
+## 13. Dependencies
 
-1. **Environment Setup:**
-   ```powershell
-   uv sync
-   # or: pip install -r requirements.txt
-   ```
-2. **Execution Order:**
-   - Execute `01_cleaning_and_eda.ipynb` (generates `cleaned_dataset.csv` and exploratory figures).
-   - Execute `02_statistical_analysis.ipynb` (runs hypothesis tests and regression models).
-   - Execute `03_visualisation_and_recommendations.ipynb` (produces executive visual decision tools).
-3. **Artifacts:** All interactive charts and visual figures are automatically exported to `outputs/figures/`.
+The Python notebooks use libraries including:
+
+```text
+Python
+Pandas
+NumPy
+Plotly
+```
+
+Additional libraries may be required by individual notebooks.
+
+For PNG export of Plotly figures, the environment may also require:
+
+```text
+Kaleido
+```
+
+If Plotly cannot export PNG files, install or enable Kaleido in the project environment.
+
+---
+
+## 14. Execution Instructions
+
+Before running the notebooks:
+
+1. Clone or download the project.
+2. Install the required Python dependencies.
+3. Download `steam_cleaned_2026.csv` from the Kaggle source.
+4. Place it in `Game_Data/steam_cleaned_2026.csv`.
+5. Ensure the nine SQL exports exist in `SQL_Analysis/Result/`.
+6. Open the notebooks in `Python_Analysis/notebooks/`.
+7. Run the notebooks in their intended dependency order.
+8. Confirm that model predictions are generated successfully.
+9. Confirm that the visualisation notebook loads all nine SQL exports.
+10. Confirm that generated figures appear only in `Python_Analysis/outputs/figures/`.
+
+---
+
+## 15. Validation
+
+The current Python and SQL handoff has been validated at several levels.
+
+### Model predictions
+
+```text
+646 game-level predictions
+```
+
+### Model-to-scenario integration
+
+```text
+164 strategic scenarios
+148 with model probability
+16 without model probability
+```
+
+### Final decision distribution
+
+```text
+GO            2
+CONDITIONAL 157
+AVOID         5
+```
+
+### Final scenario uniqueness
+
+```text
+164 total scenarios
+164 unique scenarios
+```
+
+### Platform coverage
+
+```text
+PC     52
+PS4    60
+XONE   52
+```
+
+### SQL export validation
+
+All nine SQL CSV exports have been validated against their PostgreSQL source views and currently match their expected row counts.
+
+---
+
+## 16. Important Analytical Limitations
+
+The Python analysis should be interpreted as decision support rather than certainty.
+
+Important limitations include:
+
+- Historical patterns may not continue into future releases.
+- Model probabilities are estimates.
+- The success model depends on the features available in the historical data.
+- Missing model probabilities are retained rather than imputed artificially.
+- The model is intended for pre-launch scenario support, not guaranteed revenue forecasting.
+- Historical sales data can contain market, platform, publisher, and era effects that may not generalise.
+- Visualisations communicate analytical outputs but do not independently establish causality.
+- Final launch decisions should be supplemented with financial, operational, market, and product-specific validation.
+
+---
+
+## 17. Relationship to Power BI
+
+Python is not the final presentation layer.
+
+Its role is to provide:
+
+- Statistical evidence
+- Model predictions
+- Analytical visualisations
+- Business recommendations
+- Validated analytical outputs
+
+These outputs are then used by the Power BI dashboard to provide an interactive decision-support experience.
+
+The dashboard should therefore be treated as the presentation and stakeholder-consumption layer built on top of the SQL and Python analytical foundation.
