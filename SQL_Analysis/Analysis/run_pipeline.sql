@@ -68,5 +68,5 @@ COMMIT;
 \i '07_final_decision_engine.sql'
 
 -- Final export
-\set export_dir 'C:/REPLACE_WITH_YOUR_PROJECT_PATH/SQL_Analysis/results'
+\set export_dir 'C:/Users/USER/Desktop/Resume Projects/Game_Launch_Intelligence/SQL_Analysis/results'
 \i '08_export_results.sql'
