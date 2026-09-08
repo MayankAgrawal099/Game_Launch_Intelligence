@@ -5,7 +5,6 @@
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Analytics-336791?logo=postgresql&logoColor=white)
 ![Power BI](https://img.shields.io/badge/Power_BI-Dashboard-F2C811?logo=powerbi&logoColor=black)
-![scikit-learn](https://img.shields.io/badge/scikit--learn-Random_Forest-F7931E?logo=scikitlearn&logoColor=white)
 ![pandas](https://img.shields.io/badge/pandas-Data_Wrangling-150458?logo=pandas&logoColor=white)
 ![uv](https://img.shields.io/badge/uv-Env_Management-DE5FE9)
 
@@ -159,7 +158,6 @@ Dependencies are managed with `uv` (`pyproject.toml` / `uv.lock`); a plain `requ
 
 ## 👤 Author
 
-**Mayank** — Final-year B.E. student, Artificial Intelligence & Data Science
-📍 Amravati, Maharashtra, India
+**Mayank Anil Agrawal**
 
 [LinkedIn](https://www.linkedin.com/in/agrawal-mayank-anil/) · [GitHub](https://github.com/MayankAgrawal099) · [Email](mailto:mayank.agrawal.co@gmail.com)
