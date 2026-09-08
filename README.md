@@ -10,7 +10,7 @@
 
 **"Should we launch this game as planned, and where should we invest our marketing budget?"**
 
-This project answers that question end-to-end — a PostgreSQL analytical pipeline, a Random Forest success-prediction model in Python, and an interactive Power BI dashboard, working as one connected decision-support system rather than three disconnected exercises. Every number on the dashboard traces back through the model to a specific SQL view to a specific raw dataset — nothing on the report layer is invented or eyeballed.
+This project answers that question end-to-end — a PostgreSQL analytical pipeline, a success-prediction model in Python, and an interactive Power BI dashboard, working as one connected decision-support system rather than three disconnected exercises. Every number on the dashboard traces back through the model to a specific SQL view to a specific raw dataset — nothing on the report layer is invented or eyeballed.
 
 ---
 
@@ -31,7 +31,6 @@ Two of four report pages — full dashboard walkthrough and every page in [`Powe
 - **PC, PS4, and XONE** are the only platforms that survive to the final decision set — retired platforms (PS2, DS, PSP, GBA, XB) are excluded upstream once their release lifecycle has ended, not filtered cosmetically on the dashboard
 - **PS4 is the recommended platform** — highest average platform-fit (68.0) and strategic score (69.3) of the three survivors, and **51.15%** of historical sales across them
 - **August is the strongest historical launch window** — the highest timing score of any month, paired with the second-lowest release competition of the year
-- **Random Forest success model**: ROC AUC **0.85** on a temporal holdout (trained on pre-2018 data, tested on 2018 releases — not a random split, so it's genuinely predicting forward in time), F1 **0.61** at the tuned decision threshold
 - **The central finding, stated plainly rather than buried**: the *highest-opportunity* scenario in the entire analysis — Sports on PS4 in North America, launching August, strategic score 88.91 — is still only **CONDITIONAL**, because its model-predicted success probability is **46.7%**. Strong historical market opportunity does not automatically mean high predicted commercial success. The decision engine treats these as two independent dimensions and requires both to align before recommending GO — which is exactly why only 2 of 164 scenarios do.
 
 ---
@@ -52,7 +51,7 @@ Raw multi-source game data (vgchartz, Video Games, Steam, SteamSpy)
                     ↓
         PostgreSQL: cleaning, data modelling, source reconciliation
                     ↓
-        Python: statistical analysis + Random Forest success model
+        Python: statistical analysis 
                     ↓
         PostgreSQL: model predictions loaded back in (06a)
                     ↓
@@ -114,11 +113,9 @@ Each subfolder's README documents that layer in full — execution order, exact 
 
 **2. Statistical analysis** — hypothesis testing (Kruskal-Wallis, Mann-Kendall, Shapiro-Wilk) and Gini/Lorenz concentration analysis to establish which patterns are statistically meaningful before anything gets built on top of them.
 
-**3. Predictive modelling** — a Random Forest classifier trained on engineered "prior" features (genre/publisher/developer/console historical average sales and hit-rate) to avoid leaking future information into the model. Validated on a **temporal holdout** (train on pre-2018, test on 2018) rather than a random split — ROC AUC 0.85, with calibration and per-genre robustness (AUC 0.73–0.97 across genres) checked explicitly rather than assumed.
+**3. Strategic decision engine** — a transparent, weighted scoring model in SQL (market opportunity 35%, platform fit 25%, regional opportunity 15%, timing 15%, evidence quality 10%) combined with the model's success probability to classify every genre × platform × region × month combination as GO, CONDITIONAL, or AVOID.
 
-**4. Strategic decision engine** — a transparent, weighted scoring model in SQL (market opportunity 35%, platform fit 25%, regional opportunity 15%, timing 15%, evidence quality 10%) combined with the model's success probability to classify every genre × platform × region × month combination as GO, CONDITIONAL, or AVOID.
-
-**5. Interactive dashboard** — a 4-page Power BI report translating all of the above into a stakeholder-facing decision tool, with synced cross-page filtering and consistent decision-colour conventions throughout.
+**4. Interactive dashboard** — a 4-page Power BI report translating all of the above into a stakeholder-facing decision tool, with synced cross-page filtering and consistent decision-colour conventions throughout.
 
 ---
 
