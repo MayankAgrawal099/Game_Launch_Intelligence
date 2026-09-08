@@ -70,7 +70,7 @@ Statistical modelling stays in Python; the final strategic decision framework st
 
 | Layer | Tools |
 |---|---|
-| **Data** | 4 raw multi-source datasets (vgchartz-2024, Video Games, Steam, SteamSpy) |
+| **Data** | 5 raw multi-source datasets (vgchartz-2024, Video Games, Steam, SteamSpy, steam_cleaned_2026) |
 | **Database** | PostgreSQL — 11 numbered SQL scripts + orchestration runner |
 | **Analysis & ML** | Python 3.12 · pandas · NumPy · scikit-learn · statsmodels · SciPy · seaborn · Plotly |
 | **BI & Reporting** | Power BI Desktop · DAX |
